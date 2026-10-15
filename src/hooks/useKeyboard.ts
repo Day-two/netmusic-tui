@@ -32,9 +32,9 @@ export function useKeyboard({ enabled = true }: KeyboardOptions = {}) {
       } else if (key.leftArrow || input === ',' || input === '<') {
         prev();
       } else if (key.ctrl && input === 'c') {
-        dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netMusic-cli?', action: 'exit' } });
+        dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netmusic-tui?', action: 'exit' } });
       } else if (input === 'q') {
-        dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netMusic-cli?', action: 'exit' } });
+        dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netmusic-tui?', action: 'exit' } });
       }
       return;
     }
@@ -47,7 +47,7 @@ export function useKeyboard({ enabled = true }: KeyboardOptions = {}) {
 
     // Global shortcuts (work in both modes)
     if (key.ctrl && input === 'c') {
-      dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netMusic-cli?', action: 'exit' } });
+      dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netmusic-tui?', action: 'exit' } });
       return;
     }
 
@@ -127,7 +127,7 @@ export function useKeyboard({ enabled = true }: KeyboardOptions = {}) {
 
     // Quit
     if (input === 'q') {
-      dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netMusic-cli?', action: 'exit' } });
+      dispatch({ type: 'SHOW_CONFIRM', payload: { message: 'Exit netmusic-tui?', action: 'exit' } });
       return;
     }
 

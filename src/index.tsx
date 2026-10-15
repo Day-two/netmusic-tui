@@ -5,7 +5,7 @@ import { StoreProvider } from './store.js';
 import { App } from './components/App.js';
 
 // exitOnCtrlC must be disabled so that Ink hands Ctrl+C to the app instead of
-// quitting immediately; the app shows its own "Exit netMusic-cli?" confirmation.
+// quitting immediately; the app shows its own "Exit netmusic-tui?" confirmation.
 render(
   <StoreProvider>
     <App />

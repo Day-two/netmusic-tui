@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
+// Kept as ~/.netmusic-cli for backward compatibility with existing installs;
+// renaming it would silently log everyone out.
 const CONFIG_DIR = join(homedir(), '.netmusic-cli');
 const COOKIE_FILE = join(CONFIG_DIR, 'cookie.json');
 const GUEST_FILE = join(CONFIG_DIR, 'guest.json');

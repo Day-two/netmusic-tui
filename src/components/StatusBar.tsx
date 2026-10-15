@@ -33,7 +33,7 @@ export function StatusBar({ width }: StatusBarProps) {
     <Box flexDirection="column">
       {/* Title bar and navigation */}
       <Box justifyContent="space-between" paddingX={1}>
-        <Text bold>netMusic-cli</Text>
+        <Text bold>netmusic-tui</Text>
         {state.isLoggedIn && (
           <Box gap={1}>
             {navItems.map((item) => (
