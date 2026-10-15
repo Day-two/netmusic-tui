@@ -1,13 +1,49 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+  readdirSync,
+  copyFileSync,
+  rmSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-// Kept as ~/.netmusic-cli for backward compatibility with existing installs;
-// renaming it would silently log everyone out.
-const CONFIG_DIR = join(homedir(), '.netmusic-cli');
+const CONFIG_DIR = join(homedir(), '.netmusic-tui');
 const COOKIE_FILE = join(CONFIG_DIR, 'cookie.json');
 const GUEST_FILE = join(CONFIG_DIR, 'guest.json');
 const PLAYER_STATE_FILE = join(CONFIG_DIR, 'player-state.json');
+
+// State directory used before the rename. Migrated once at startup so existing
+// installs keep their login, guest flag and queue. Remove this block (and the
+// constant below) once no install can predate the rename.
+const LEGACY_CONFIG_DIR = join(homedir(), '.netmusic-cli');
+
+/**
+ * Move the pre-rename state directory into place. Best effort: on failure the
+ * legacy directory is left untouched and the migration is retried next launch.
+ */
+function migrateLegacyConfigDir(): void {
+  try {
+    if (existsSync(CONFIG_DIR) || !existsSync(LEGACY_CONFIG_DIR)) return;
+    try {
+      // Same volume: atomic and keeps file metadata
+      renameSync(LEGACY_CONFIG_DIR, CONFIG_DIR);
+    } catch {
+      mkdirSync(CONFIG_DIR, { recursive: true });
+      for (const name of readdirSync(LEGACY_CONFIG_DIR)) {
+        copyFileSync(join(LEGACY_CONFIG_DIR, name), join(CONFIG_DIR, name));
+      }
+      rmSync(LEGACY_CONFIG_DIR, { recursive: true, force: true });
+    }
+  } catch {
+    // Never block startup on a migration failure
+  }
+}
+
+migrateLegacyConfigDir();
 
 interface StoredData<T> {
   data: T;

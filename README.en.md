@@ -153,7 +153,9 @@ netmusic
 
 ## Configuration and data
 
-Everything is stored in `~/.netmusic-cli/` (the directory name is kept for backward compatibility with earlier installs of this project; renaming it would log you out):
+Everything is stored in `~/.netmusic-tui/`:
+
+> If the pre-1.0.1 directory `~/.netmusic-cli/` still exists, it is moved into place on first launch (login and queue carry over). Only `~/.netmusic-tui/` is used afterwards — do not write files into the old path, they are ignored.
 
 | File | Contents |
 | --- | --- |
@@ -196,7 +198,7 @@ Everything is stored in `~/.netmusic-cli/` (the directory name is kept for backw
 | A track will not play | VIP/copyright-restricted tracks may not return a stream URL for your account; try another track |
 | Lyrics are out of sync | Some tracks ship unsynced or offset lyrics; only timestamped lines are shown |
 | Columns look misaligned | Report the terminal and version — width handling covers CJK, fullwidth and ANSI text |
-| Login expired | Delete `~/.netmusic-cli/cookie.json` and sign in again |
+| Login expired | Delete `~/.netmusic-tui/cookie.json` and sign in again |
 
 ## Contributing
 

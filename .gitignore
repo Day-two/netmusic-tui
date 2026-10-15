@@ -7,6 +7,8 @@ dist/
 *.tsbuildinfo
 
 # ---- runtime user data (NEVER commit: contains login cookie) ----
+.netmusic-tui/
+# legacy directory name, migrated automatically on first launch; ignored defensively
 .netmusic-cli/
 cookie.json
 player-state.json
