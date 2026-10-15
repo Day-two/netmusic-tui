@@ -21,6 +21,11 @@ session-ses_*.md
 npm-debug.log*
 yarn-error.log*
 
+# ---- local npm cache ----
+# Used when a query needs the network from a sandbox that cannot write outside
+# the repository (`npm_config_cache=.npm-cache`)
+.npm-cache/
+
 # ---- env / secrets ----
 .env
 .env.*
