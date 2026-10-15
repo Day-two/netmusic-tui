@@ -33,7 +33,7 @@
 - **Search** — songs, artists, albums, playlists and lyrics, with drill-down into an artist's hot songs, an album's track list, or a playlist's tracks
 - **Playback queue** — the queue is the playlist page; move, delete, append or play a subset of songs with a vim-style selection mode
 - **Lyrics** — time-synced scrolling lyrics plus an immersive focus view with a progress bar
-- **Session persistence** — the login cookie (30-day expiry) and the playback queue/position are restored on the next launch
+- **Session persistence** — the login cookie (30-day expiry) and the playback queue/position are restored on the next launch (the saved position is actually resumed when a seek-capable player is available — see Requirements)
 - **Terminal-correct layout** — CJK-aware width measurement keeps columns aligned for Chinese/Japanese/Korean text
 - **Cross-platform** — Windows, Linux and macOS
 

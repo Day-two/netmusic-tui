@@ -58,6 +58,9 @@ interface AppState {
   volume: number; // 0-100
   progress: number; // ms
 
+  // Saved position restored from disk; applied once, to that song only
+  resumeOffset: { songId: number; offset: number } | null;
+
   // Toast
   toast: Toast | null;
 
@@ -95,6 +98,7 @@ type Action =
   | { type: 'APPEND_PLAYLIST'; payload: Song[] }
   | { type: 'SET_PLAYER_STATUS'; payload: PlayerStatus }
   | { type: 'SET_PROGRESS'; payload: number }
+  | { type: 'CLEAR_RESUME_OFFSET' }
   | { type: 'SET_VOLUME'; payload: number }
   | { type: 'NEXT_SONG' }
   | { type: 'PREV_SONG' }
@@ -128,6 +132,7 @@ const initialState: AppState = {
   currentIndex: -1,
   volume: 80,
   progress: 0,
+  resumeOffset: null,
   toast: null,
   currentPlaylistId: null,
   currentRanklistId: null,
@@ -214,6 +219,7 @@ function reducer(state: AppState, action: Action): AppState {
         currentSong: songs[startIndex] ?? null,
         playerStatus: songs[startIndex] ? 'playing' : 'idle',
         progress: 0,
+        resumeOffset: null,
         selectionMode: false,
         selectedIndices: new Set(),
       };
@@ -228,6 +234,7 @@ function reducer(state: AppState, action: Action): AppState {
         currentSong: songs[startIndex] ?? null,
         playerStatus: songs[startIndex] ? 'playing' : 'idle',
         progress: 0,
+        resumeOffset: null,
         // Preserve selectionMode and selectedIndices
       };
     }
@@ -254,6 +261,12 @@ function reducer(state: AppState, action: Action): AppState {
         progress: action.payload,
       };
 
+    case 'CLEAR_RESUME_OFFSET':
+      return {
+        ...state,
+        resumeOffset: null,
+      };
+
     case 'SET_VOLUME':
       return {
         ...state,
@@ -267,6 +280,7 @@ function reducer(state: AppState, action: Action): AppState {
           ...state,
           playerStatus: 'stopped',
           progress: 0,
+          resumeOffset: null,
         };
       }
       return {
@@ -275,6 +289,7 @@ function reducer(state: AppState, action: Action): AppState {
         currentSong: state.playlist[nextIndex],
         playerStatus: 'playing',
         progress: 0,
+        resumeOffset: null,
       };
     }
 
@@ -289,6 +304,7 @@ function reducer(state: AppState, action: Action): AppState {
         currentSong: state.playlist[prevIndex],
         playerStatus: 'playing',
         progress: 0,
+        resumeOffset: null,
       };
     }
 
@@ -415,6 +431,10 @@ function reducer(state: AppState, action: Action): AppState {
         currentSong: action.payload.currentSong,
         progress: action.payload.progress,
         volume: action.payload.volume,
+        // The saved position is applied to that one song when playback starts
+        resumeOffset: action.payload.currentSong && action.payload.progress > 0
+          ? { songId: action.payload.currentSong.id, offset: action.payload.progress }
+          : null,
         playerStatus: action.payload.currentSong ? 'paused' : 'idle',
       };
 

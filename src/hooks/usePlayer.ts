@@ -51,22 +51,39 @@ export function usePlayer() {
         // Play new song — skip if this exact song is already loaded (prevents reset on page switch)
         const songId = state.currentSong.id;
         _loadedSongId = songId;
+        // A restored session asks for the saved position; only apply it to that song
+        const resume = state.resumeOffset?.songId === songId ? state.resumeOffset.offset : 0;
         let cancelled = false;
         getSongUrl(songId, state.cookie ?? undefined).then((result) => {
           if (cancelled) return;
-          if (result.success && result.data) {
-            playerRef.current?.play(result.data).then(() => {
-              if (!cancelled) playerRef.current?.setSystemVolume(state.volume);
-            }).catch(() => {
-              if (!cancelled) { _loadedSongId = null; dispatch({ type: 'SET_PLAYER_STATUS', payload: 'stopped' }); }
-            });
-          } else {
+          if (!result.success || !result.data) {
             _loadedSongId = null;
             dispatch({
               type: 'SHOW_TOAST',
               payload: { message: result.error ?? 'Failed to play', type: 'error' },
             });
             dispatch({ type: 'SET_PLAYER_STATUS', payload: 'stopped' });
+            return;
+          }
+
+          if (resume > 0) {
+            dispatch({ type: 'CLEAR_RESUME_OFFSET' });
+            playerRef.current?.playFrom(result.data, resume).then((honoured) => {
+              if (cancelled) return;
+              playerRef.current?.setSystemVolume(state.volume);
+              // Without a seek-capable player the track starts at 0, so report that
+              // instead of showing a position that is not real.
+              if (!honoured) dispatch({ type: 'SET_PROGRESS', payload: 0 });
+            }).catch(() => {
+              if (!cancelled) { _loadedSongId = null; dispatch({ type: 'SET_PLAYER_STATUS', payload: 'stopped' }); }
+            });
+          } else {
+            // Apply the volume before playback starts (play() resolves at track end,
+            // so chaining it there would only apply the volume after the song finished)
+            playerRef.current?.setSystemVolume(state.volume);
+            playerRef.current?.play(result.data).catch(() => {
+              if (!cancelled) { _loadedSongId = null; dispatch({ type: 'SET_PLAYER_STATUS', payload: 'stopped' }); }
+            });
           }
         });
         return () => { cancelled = true; };

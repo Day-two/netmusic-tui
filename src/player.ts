@@ -161,6 +161,77 @@ export class AudioPlayer extends EventEmitter {
   }
 
   /**
+   * Start a seek-capable player at an offset. Returns false when no
+   * seek-capable player is available so the caller can fall back to play().
+   */
+  private startSeekable(source: string, offsetMs: number): boolean {
+    const offsetSec = offsetMs / 1000;
+    const seekPlayer = offsetSec > 0.5 ? this.detectSeekablePlayer() : null;
+    if (!seekPlayer) return false;
+
+    if (this.currentProcess) {
+      this.killProcess(this.currentProcess);
+      this.currentProcess = null;
+    }
+
+    const gen = ++this._playGeneration;
+    this._lastSource = source;
+    this._isPlaying = true;
+    this._isPaused = false;
+    this._startTime = Date.now() - offsetMs;
+    this._pausedAt = 0;
+
+    const args = [...this.buildSeekArgs(seekPlayer, offsetSec), source];
+    const proc = spawn(seekPlayer, args, { stdio: ['ignore', 'ignore', 'ignore'] });
+    this.currentProcess = proc;
+
+    // Reapply system volume after seeking
+    this.setSystemVolume(this._volume);
+
+    proc.on('close', (code: number) => {
+      if (gen !== this._playGeneration) return;
+      this._isPlaying = false;
+      this._isPaused = false;
+      this.currentProcess = null;
+      if (code === 0) {
+        this.emit('end');
+      } else if (code !== null) {
+        this.emit('error', new Error(`Player exited with code ${code}`));
+      }
+    });
+
+    proc.on('error', () => {
+      if (gen !== this._playGeneration) return;
+      // Seekable player failed, fall back to play-sound (preserve elapsed time)
+      this._isPlaying = false;
+      this._isPaused = false;
+      this.currentProcess = null;
+      this.play(source);
+      this._startTime = Date.now() - offsetMs;
+      this.setSystemVolume(this._volume);
+    });
+
+    this.emit('play');
+    return true;
+  }
+
+  /**
+   * Play a source starting at an offset, e.g. to restore a saved position.
+   * Resolves true when the offset was honoured; false means playback started
+   * from the beginning because no seek-capable player is available.
+   */
+  playFrom(source: string, offsetMs: number): Promise<boolean> {
+    if (offsetMs > 500 && this.startSeekable(source, offsetMs)) {
+      return Promise.resolve(true);
+    }
+    // No seek support: start normally. Failures surface through the 'error' event.
+    this.play(source).catch(() => {
+      /* handled by the caller through the player error event */
+    });
+    return Promise.resolve(false);
+  }
+
+  /**
    * Resume playback from the paused position
    */
   resume(): Promise<void> {
@@ -169,57 +240,16 @@ export class AudioPlayer extends EventEmitter {
     }
 
     const savedPausedAt = this._pausedAt;
-    const offsetSec = savedPausedAt / 1000;
-    const seekPlayer = this.detectSeekablePlayer();
 
-    if (seekPlayer && offsetSec > 0.5) {
-      const gen = ++this._playGeneration;
-      this._isPlaying = true;
-      this._isPaused = false;
-      this._startTime = Date.now() - savedPausedAt;
-      this._pausedAt = 0;
-
-      const args = [...this.buildSeekArgs(seekPlayer, offsetSec), this._lastSource];
-      const proc = spawn(seekPlayer, args, { stdio: ['ignore', 'ignore', 'ignore'] });
-      this.currentProcess = proc;
-
-      // Reapply system volume after resume
-      this.setSystemVolume(this._volume);
-
-      proc.on('close', (code: number) => {
-        if (gen !== this._playGeneration) return;
-        this._isPlaying = false;
-        this._isPaused = false;
-        this.currentProcess = null;
-        if (code === 0) {
-          this.emit('end');
-        } else if (code !== null) {
-          this.emit('error', new Error(`Player exited with code ${code}`));
-        }
-      });
-
-      proc.on('error', () => {
-        if (gen !== this._playGeneration) return;
-        // Seekable player failed, fall back to play-sound (preserve elapsed time)
-        this._isPlaying = false;
-        this._isPaused = false;
-        this.currentProcess = null;
-        const elapsed = savedPausedAt;
-        const p = this.play(this._lastSource);
-        this._startTime = Date.now() - elapsed;
-        this.setSystemVolume(this._volume);
-      });
-
-      this.emit('play');
+    if (this.startSeekable(this._lastSource, savedPausedAt)) {
       return Promise.resolve();
     }
 
     // No seek-capable player, restart via play-sound (no seek support).
     // Save elapsed time: play() resets _startTime, so we compensate after.
-    const savedElapsed = savedPausedAt;
     const playPromise = this.play(this._lastSource);
     // Adjust _startTime so getElapsed() returns the correct position
-    this._startTime = Date.now() - savedElapsed;
+    this._startTime = Date.now() - savedPausedAt;
     this.setSystemVolume(this._volume);
     return playPromise;
   }
