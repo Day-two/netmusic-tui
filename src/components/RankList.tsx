@@ -40,7 +40,17 @@ export function RankList() {
   // Handle back navigation within RankList
   useInput((input, key) => {
     if (state.mode !== 'normal') return;
-    
+
+    // [r] Retry after a failed load (hinted on the error screen)
+    if (input === 'r' && error) {
+      if (view === 'detail' && state.currentRanklistId) {
+        loadTopListDetail(state.currentRanklistId);
+      } else {
+        loadTopLists();
+      }
+      return;
+    }
+
     if (view === 'detail' && (key.escape || input === 'h')) {
       setView('lists');
       setSelectedIndex(0);

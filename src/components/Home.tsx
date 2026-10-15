@@ -8,6 +8,7 @@ import { PaginatedList } from './common/PaginatedList.js';
 import { Loading } from './common/Loading.js';
 import { useLayout } from './Layout.js';
 import { padTextVisual } from '../utils/format.js';
+import { clearGuestMode } from '../utils/storage.js';
 
 type Section = 'daily' | 'playlists';
 
@@ -43,12 +44,22 @@ export function Home() {
         getUserPlaylists(state.userId!, state.cookie!),
       ]);
 
+      const failures: string[] = [];
+
       if (dailyResult.success && dailyResult.data) {
         setDailySongs(dailyResult.data);
+      } else {
+        failures.push(dailyResult.error ?? 'daily recommendations');
       }
 
       if (playlistResult.success && playlistResult.data) {
         setPlaylists(playlistResult.data);
+      } else {
+        failures.push(playlistResult.error ?? 'playlists');
+      }
+
+      if (failures.length > 0) {
+        setError(`Failed to load ${failures.join('; ')}`);
       }
     } catch (err: any) {
       setError(err.message ?? 'Failed to load data');
@@ -70,6 +81,26 @@ export function Home() {
   // Tab switching + P to play all daily songs
   useInput((input, key) => {
     if (state.mode === 'input') return;
+
+    // [r] Retry after a failed load (hinted on the error screen)
+    if (input === 'r' && error) {
+      loadData();
+      return;
+    }
+
+    // Shortcuts advertised on the guest screen
+    if (state.isGuest) {
+      if (input === '2') {
+        dispatch({ type: 'NAVIGATE', payload: 'search' });
+        dispatch({ type: 'SET_MODE', payload: 'input' });
+        return;
+      }
+      if (input === 'l') {
+        clearGuestMode();
+        dispatch({ type: 'LOGOUT' });
+        return;
+      }
+    }
 
     if (key.tab) {
       setSection(section === 'daily' ? 'playlists' : 'daily');
