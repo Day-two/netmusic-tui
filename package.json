@@ -1,0 +1,66 @@
+{
+  "name": "netmusic-tui",
+  "version": "1.0.0",
+  "description": "Terminal (TUI) music player for NetEase Cloud Music, built with Ink + React and powered by the NetEase Cloud Music API",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "netmusic": "dist/index.js",
+    "netmusic-tui": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "tsx src/index.tsx",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run clean && npm run build",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "keywords": [
+    "music",
+    "netease",
+    "netease-cloud-music",
+    "cli",
+    "tui",
+    "player",
+    "terminal",
+    "ink",
+    "react",
+    "typescript"
+  ],
+  "author": "Day-two",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Day-two/netmusic-tui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Day-two/netmusic-tui/issues"
+  },
+  "homepage": "https://github.com/Day-two/netmusic-tui#readme",
+  "dependencies": {
+    "@neteasecloudmusicapienhanced/api": "^4.35.0",
+    "ink": "^4.4.1",
+    "ink-select-input": "^5.0.0",
+    "ink-text-input": "^5.0.0",
+    "play-sound": "^1.1.6",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
