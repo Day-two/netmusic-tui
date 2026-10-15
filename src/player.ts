@@ -1,4 +1,3 @@
-// @ts-ignore - play-sound has no types
 import playSound from 'play-sound';
 import { EventEmitter } from 'node:events';
 import { spawn, spawnSync, execSync } from 'node:child_process';

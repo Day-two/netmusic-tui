@@ -164,15 +164,6 @@ export function usePlayer() {
     dispatch({ type: 'PLAY_SONG_NOW', payload: { songs: pl, startIndex: idx >= 0 ? idx : 0 } });
   }, [state.playlist, state.currentIndex]);
 
-  /** Insert a single song after the current song (dedup). Does not start playing. */
-  const insertNext = useCallback((song: Song) => {
-    if (state.playlist.some(s => s.id === song.id)) return;
-    const pl = [...state.playlist];
-    const insertAt = state.currentIndex + 1;
-    pl.splice(insertAt, 0, song);
-    dispatch({ type: 'SET_PLAYLIST', payload: { songs: pl, startIndex: state.currentIndex } });
-  }, [state.playlist, state.currentIndex]);
-
   /** Append songs to the end of the playlist (dedup). Does not start playing or reset selection. */
   const appendSongs = useCallback((songs: Song[]) => {
     dispatch({ type: 'APPEND_PLAYLIST', payload: songs });
@@ -193,7 +184,6 @@ export function usePlayer() {
     setVolume,
     playPlaylist,
     playSongNow,
-    insertNext,
     appendSongs,
   };
 }

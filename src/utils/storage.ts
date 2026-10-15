@@ -5,7 +5,6 @@ import { homedir } from 'node:os';
 const CONFIG_DIR = join(homedir(), '.netmusic-cli');
 const COOKIE_FILE = join(CONFIG_DIR, 'cookie.json');
 const GUEST_FILE = join(CONFIG_DIR, 'guest.json');
-const PLAYLIST_CACHE_FILE = join(CONFIG_DIR, 'playlist-cache.json');
 const PLAYER_STATE_FILE = join(CONFIG_DIR, 'player-state.json');
 
 interface StoredData<T> {
@@ -101,32 +100,6 @@ export function clearGuestMode(): void {
     }
   } catch {
     // ignore
-  }
-}
-
-/**
- * Save playlist cache (for offline display)
- */
-export function savePlaylistCache(playlists: unknown[]): void {
-  ensureConfigDir();
-  const stored: StoredData<unknown[]> = {
-    data: playlists,
-    updatedAt: new Date().toISOString(),
-  };
-  writeFileSync(PLAYLIST_CACHE_FILE, JSON.stringify(stored, null, 2), 'utf-8');
-}
-
-/**
- * Load playlist cache
- */
-export function loadPlaylistCache<T = unknown[]>(): T | null {
-  try {
-    if (!existsSync(PLAYLIST_CACHE_FILE)) return null;
-    const content = readFileSync(PLAYLIST_CACHE_FILE, 'utf-8');
-    const stored: StoredData<T> = JSON.parse(content);
-    return stored.data;
-  } catch {
-    return null;
   }
 }
 

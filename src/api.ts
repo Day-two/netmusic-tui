@@ -154,50 +154,6 @@ export async function getLoginStatus(
   }
 }
 
-/**
- * Search songs by keyword
- */
-export async function searchSongs(
-  keywords: string,
-  page: number = 1,
-  limit: number = 30,
-  cookie?: string
-): Promise<ApiResult<{ songs: Song[]; total: number }>> {
-  try {
-    const api = await getApi();
-    const offset = (page - 1) * limit;
-    const result = await api.cloudsearch({
-      keywords,
-      type: 1, // songs
-      limit,
-      offset,
-      cookie,
-    });
-    
-    if (result.body.code === 200 && result.body.result?.songs) {
-      const songs: Song[] = result.body.result.songs.map((s: any) => ({
-        id: s.id,
-        name: s.name,
-        artists: s.ar?.map((a: any) => a.name).join(' / ') ?? 'Unknown',
-        album: s.al?.name ?? 'Unknown',
-        duration: s.dt ?? 0,
-      }));
-      
-      return {
-        success: true,
-        data: {
-          songs,
-          total: result.body.result.songCount ?? songs.length,
-        },
-      };
-    }
-    
-    return { success: false, error: 'Search failed' };
-  } catch (err: any) {
-    return { success: false, error: err.message ?? 'Network error' };
-  }
-}
-
 // Search type constants matching API
 export const SearchType = {
   SONG: 1,

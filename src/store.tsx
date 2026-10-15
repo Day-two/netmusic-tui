@@ -60,7 +60,6 @@ interface AppState {
 
   // Toast
   toast: Toast | null;
-  toastTimer: NodeJS.Timeout | null;
 
   // Playlist detail view
   currentPlaylistId: number | null;
@@ -131,7 +130,6 @@ const initialState: AppState = {
   volume: 80,
   progress: 0,
   toast: null,
-  toastTimer: null,
   currentPlaylistId: null,
   currentRanklistId: null,
   backHandled: false,
@@ -304,9 +302,6 @@ function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'SHOW_TOAST': {
-      if (state.toastTimer) {
-        clearTimeout(state.toastTimer);
-      }
       return {
         ...state,
         toast: {
@@ -321,7 +316,6 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         toast: null,
-        toastTimer: null,
       };
 
     case 'SET_PLAYLIST_ID':

@@ -47,7 +47,6 @@
   "dependencies": {
     "@neteasecloudmusicapienhanced/api": "^4.35.0",
     "ink": "^4.4.1",
-    "ink-select-input": "^5.0.0",
     "ink-text-input": "^5.0.0",
     "play-sound": "^1.1.6",
     "qrcode": "^1.5.4",
