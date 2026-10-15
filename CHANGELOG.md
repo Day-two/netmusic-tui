@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Moving a track (`J`/`K`) or deleting tracks (`d`/`D`) in the queue reused the action that starts a new list, so one move dropped you out of selection mode and reset the progress bar; reordering now preserves progress, the selection and selection mode
+- Deleting the track that is playing now advances to the next track (a manual pause is respected), and emptying the queue stops the audio instead of leaving it playing while the UI shows no song
+- A restored session only *displayed* the saved position: playback now actually starts at that offset when a seek-capable player is available, and reports position 0 instead of a position that is not real when it is not
+- The lyric view and the player bar truncated text by character count, so Chinese/Japanese lyrics and titles overflowed and wrapped; both now truncate by display width, like the lists already did
+- The status bar hardcoded `v1.0.0`; the version now comes from `package.json`
+
 ## [1.0.0] - 2026-10-15
 
 First public release.
