@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A restored session only *displayed* the saved position: playback now actually starts at that offset when a seek-capable player is available, and reports position 0 instead of a position that is not real when it is not
 - The lyric view and the player bar truncated text by character count, so Chinese/Japanese lyrics and titles overflowed and wrapped; both now truncate by display width, like the lists already did
 - The status bar hardcoded `v1.0.0`; the version now comes from `package.json`
+- Display width was wrong for every script outside the CJK and fullwidth ranges: Hangul syllables and Jamo and pictographic emoji counted as one column instead of two, and combining marks, variation selectors and joiners counted as one column instead of none. Korean and emoji titles could therefore overflow or shift their column, and a decomposed accent spent a column it does not occupy. Box-drawing, arrow and progress-bar glyphs are deliberately unchanged at one column
+- `formatDate` formatted the UTC instant, so it reported the wrong day for most of the world (east of UTC a local 00:30 landed on the previous UTC day, west of UTC even a plain `2026-01-02` landed on 2026-01-01); it now reports the local calendar date and passes a plain `YYYY-MM-DD` through untouched
 
 ## [1.0.0] - 2026-10-15
 

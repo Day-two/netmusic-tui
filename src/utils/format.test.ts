@@ -40,15 +40,38 @@ describe('formatNumber', () => {
 });
 
 describe('formatDate', () => {
-  it('formats a UTC instant as YYYY-MM-DD', () => {
-    expect(formatDate('2026-10-15T12:00:00Z')).toBe('2026-10-15');
-    expect(formatDate('2026-01-02')).toBe('2026-01-02');
+  /** The local calendar date, computed independently of the implementation. */
+  const localDate = (iso: string): string => {
+    const d = new Date(iso);
+    return [
+      d.getFullYear(),
+      (d.getMonth() + 1).toString().padStart(2, '0'),
+      d.getDate().toString().padStart(2, '0'),
+    ].join('-');
+  };
+
+  it('formats a timestamp as the local calendar date', () => {
+    expect(formatDate('2026-10-15T12:00:00Z')).toBe(localDate('2026-10-15T12:00:00Z'));
+    expect(formatDate('2026-10-15T00:30:00+08:00')).toBe(localDate('2026-10-15T00:30:00+08:00'));
   });
 
-  it('converts to UTC before formatting, so an offset can shift the day', () => {
-    // Known limitation, pinned here on purpose: a timestamp that is still the
-    // previous day in UTC reports that day, whatever the local timezone is.
-    expect(formatDate('2026-10-15T00:30:00+08:00')).toBe('2026-10-14');
+  it('passes a plain YYYY-MM-DD date through untouched', () => {
+    // A date-only string names a calendar date, not an instant; parsing it as
+    // UTC midnight used to shift it a day for every timezone west of UTC.
+    expect(formatDate('2026-01-02')).toBe('2026-01-02');
+    expect(formatDate('2026-10-15')).toBe('2026-10-15');
+    expect(formatDate('2026-02-29')).toBe('2026-02-29');
+  });
+
+  it('reports the local calendar date for a timestamp', () => {
+    expect(formatDate('2026-10-15T12:00:00Z')).toBe(localDate('2026-10-15T12:00:00Z'));
+    expect(formatDate('2026-10-15T00:30:00+08:00')).toBe(localDate('2026-10-15T00:30:00+08:00'));
+    expect(formatDate('2026-10-15T23:30:00Z')).toBe(localDate('2026-10-15T23:30:00Z'));
+  });
+
+  it('always produces a zero-padded YYYY-MM-DD string', () => {
+    expect(formatDate('2026-01-02')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(formatDate('2026-10-15T12:00:00Z')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 

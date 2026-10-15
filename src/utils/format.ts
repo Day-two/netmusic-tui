@@ -16,11 +16,27 @@ export function formatNumber(num: number): string {
 }
 
 /**
- * Format a date string (YYYY-MM-DD)
+ * Format a date string as a calendar date (YYYY-MM-DD)
+ *
+ * A string that is already a plain `YYYY-MM-DD` date is returned unchanged: it
+ * names a calendar date, not an instant, so routing it through `Date` would
+ * reinterpret it in the local timezone and shift the day for every timezone
+ * west of UTC.
+ *
+ * For a timestamp the local calendar date is reported. The previous
+ * implementation formatted the UTC instant instead, which shows the wrong day
+ * for most of the world: east of UTC a local 00:30 lands on the previous UTC
+ * day, and west of UTC a late-evening local time lands on the next one.
  */
 export function formatDate(dateStr: string): string {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (dateOnly) return dateStr;
+
   const date = new Date(dateStr);
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
