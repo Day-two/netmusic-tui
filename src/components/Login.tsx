@@ -25,6 +25,18 @@ export function Login() {
   const qrKeyRef = useRef<string | null>(null);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Typing is its own mode so the global shortcut layer cannot steal keystrokes
+  // (previously a "g" in the password field logged you in as guest).
+  const typing = state.mode === 'input';
+
+  // Focus the form on entry; Esc drops back to the shortcut layer.
+  useEffect(() => {
+    dispatch({ type: 'SET_MODE', payload: 'input' });
+    return () => {
+      dispatch({ type: 'SET_MODE', payload: 'normal' });
+    };
+  }, [dispatch]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -32,6 +44,13 @@ export function Login() {
         clearInterval(pollTimerRef.current);
       }
     };
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
   }, []);
 
   // Start QR login flow when switching to QR mode
@@ -73,9 +92,7 @@ export function Login() {
   }, []);
 
   const startPolling = useCallback((key: string) => {
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-    }
+    stopPolling();
 
     pollTimerRef.current = setInterval(async () => {
       const result = await checkQrStatus(key);
@@ -93,10 +110,7 @@ export function Login() {
           setQrMessage('Scanned! Confirm on your phone...');
           break;
         case 803:
-          if (pollTimerRef.current) {
-            clearInterval(pollTimerRef.current);
-            pollTimerRef.current = null;
-          }
+          stopPolling();
           setQrStatus('success');
           setQrMessage('Login successful!');
           if (cookie) {
@@ -115,47 +129,59 @@ export function Login() {
           }
           break;
         case 800:
-          if (pollTimerRef.current) {
-            clearInterval(pollTimerRef.current);
-            pollTimerRef.current = null;
-          }
+          stopPolling();
           setQrStatus('expired');
           setQrMessage('QR code expired. Press [r] to refresh.');
           break;
       }
     }, 2000);
-  }, [dispatch]);
+  }, [dispatch, stopPolling]);
 
   const handleGuestLogin = useCallback(() => {
     saveGuestMode();
     dispatch({ type: 'GUEST_LOGIN' });
   }, [dispatch]);
 
+  const switchMode = useCallback((next: LoginMode) => {
+    if (next === mode) return;
+    setMode(next);
+    setStep('phone');
+    setError(null);
+    if (next === 'qr') {
+      startQrLogin();
+    } else {
+      stopPolling();
+    }
+  }, [mode, startQrLogin, stopPolling]);
+
+  // Shortcut layer. Escape (handled globally) leaves the typing mode.
   useInput((input, key) => {
-    // Guest mode shortcut
-    if (input === 'g' && state.mode === 'normal') {
+    if (state.mode === 'input') return;
+
+    if (input === 'g') {
       handleGuestLogin();
       return;
     }
 
-    // Tab to switch login mode
-    if (key.tab && state.mode === 'normal') {
-      const newMode = mode === 'phone' ? 'qr' : 'phone';
-      setMode(newMode);
-      setStep('phone');
-      setError(null);
-      if (newMode === 'qr') {
-        startQrLogin();
-      } else {
-        if (pollTimerRef.current) {
-          clearInterval(pollTimerRef.current);
-          pollTimerRef.current = null;
-        }
-      }
+    if (input === 'i' || input === '/' || key.return) {
+      dispatch({ type: 'SET_MODE', payload: 'input' });
+      return;
     }
 
-    // Refresh QR code
-    if (mode === 'qr' && input === 'r' && (qrStatus === 'expired' || qrStatus === 'idle')) {
+    if (key.tab) {
+      switchMode(mode === 'phone' ? 'qr' : 'phone');
+      return;
+    }
+    if (input === '1') {
+      switchMode('phone');
+      return;
+    }
+    if (input === '2') {
+      switchMode('qr');
+      return;
+    }
+
+    if (input === 'r' && mode === 'qr' && (qrStatus === 'expired' || qrStatus === 'idle')) {
       startQrLogin();
     }
   });
@@ -204,7 +230,11 @@ export function Login() {
       </Box>
 
       <Box paddingX={1}>
-        <Text dimColor>[Tab] Switch  [g] Guest mode  [1] Phone  [2] QR</Text>
+        <Text dimColor>
+          {typing
+            ? '[Esc] Shortcuts  [Enter] Submit'
+            : '[i] or [/] Type  [Tab] Switch  [1] Phone  [2] QR  [g] Guest'}
+        </Text>
       </Box>
 
       {/* Phone login form */}
@@ -213,7 +243,7 @@ export function Login() {
           <Box
             flexDirection="column"
             borderStyle="round"
-            borderColor="gray"
+            borderColor={typing ? 'cyan' : 'gray'}
             paddingX={2}
             paddingY={1}
             gap={1}
@@ -224,7 +254,7 @@ export function Login() {
               <>
                 <Box gap={2}>
                   <Text>Phone</Text>
-                  {step === 'phone' ? (
+                  {typing && step === 'phone' ? (
                     <TextInput
                       value={phone}
                       onChange={setPhone}
@@ -232,13 +262,13 @@ export function Login() {
                       placeholder="Enter phone number"
                     />
                   ) : (
-                    <Text>{phone}</Text>
+                    <Text>{phone || <Text dimColor>(press i to type)</Text>}</Text>
                   )}
                 </Box>
 
                 <Box gap={2}>
                   <Text>Password</Text>
-                  {step === 'password' ? (
+                  {typing && step === 'password' ? (
                     <TextInput
                       value={password}
                       onChange={setPassword}
