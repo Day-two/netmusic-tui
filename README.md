@@ -237,16 +237,20 @@ npm ci           # 安装依赖
 npm run dev      # 用 tsx 直接运行源码
 npm run build    # 编译到 dist/
 npm run lint     # 目前等同于 tsc --noEmit（类型检查）
+npm test         # 跑单元测试（vitest）
 ```
 
-CI（GitHub Actions）会在 Node 18 / 20 / 22 × Ubuntu / Windows 上执行类型检查与构建。
+CI（GitHub Actions）会在 Node 18 / 20 / 22 × Ubuntu / Windows 上执行类型检查与构建，并单独跑一遍单元测试。
 
 源码结构：
 
 ```text
 src/
 ├── index.tsx          入口（Ink render）
-├── store.tsx          useReducer 状态：登录、导航、播放、多选、焦点、对话框
+├── store/
+│   ├── reducer.ts     纯状态：类型、initialState、reducer（不依赖 React）
+│   └── context.tsx    React 层：StoreProvider 与 useStore
+├── store.tsx          上面两者的再导出（保持导入路径不变）
 ├── api.ts             网易云接口封装（统一返回 ApiResult<T>）
 ├── player.ts          外部播放器封装：播放 / 暂停 / seek / 系统音量
 ├── version.ts         版本号（运行时读取 package.json）
@@ -254,6 +258,8 @@ src/
 ├── components/        页面与通用组件
 └── utils/             CJK 宽度与截断、本地存储
 ```
+
+测试与被测文件放在一起（`src/**/*.test.ts`），不会进入 `dist/` 发布产物。
 
 开发史与来源说明见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
 
@@ -264,7 +270,7 @@ src/
 - **生成** —— 2026 年 6 月 6–7 日，全部源码由 AI 编程工具 **OpenCode 1.16.2**（模型 `mimo-v2.5-pro`）在空目录中写出，单次会话内共 68 次文件写入。会话 ID、时间范围、工具调用统计与当时的原始指令都记录在 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
 - **人工介入** —— 生成之后由维护者接手：逐文件审阅，修复了一批交互缺陷（多选与播放进度被重置、删除正在播放的歌后音频不停、`Ctrl+C` 绕过退出确认、登录页按键泄漏、歌词与播放条的中日文截断、"续播位置"只是显示），清理死代码，并补齐 MIT 许可证、CI、变更日志与溯源记录。这些改动按主题拆成独立提交，可在 git 历史中逐条核对。
 - **维护承诺** —— 维护者会尽力保持其可维护性：CI 强制类型检查与构建，改动按主题提交，用户可见的限制集中登记在[已知问题](#已知问题)，修好后同步更新 [CHANGELOG](CHANGELOG.md) 并从这里移除。
-- **当前不足（请据此评估）** —— 尚无自动化测试；接口层没有缓存与重试；播放进度为推算值。AI 生成的代码可能存在未被审出的逻辑错误，请勿在关键场景直接依赖；遇到问题欢迎提 issue。
+- **当前不足（请据此评估）** —— 单元测试目前只覆盖播放队列的 reducer 与文本宽度工具，界面与网络层仍无测试；接口层没有缓存与重试；播放进度为推算值。AI 生成的代码可能存在未被审出的逻辑错误，请勿在关键场景直接依赖；遇到问题欢迎提 issue。
 
 ## 致谢
 

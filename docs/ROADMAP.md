@@ -22,7 +22,6 @@
 
 ## 工程质量
 
-- **单元测试** —— 为播放队列的 reducer 与 CJK 文本工具补测试，并接入 CI
 - **精简发布产物** —— 去掉 CLI 无用的类型声明与 sourcemap
 - **依赖自动更新** —— 接入 Dependabot
 - **约定固化** —— 把"修好已知问题要同步更新 README 与 CHANGELOG"等规则写进文档与 CI
@@ -36,6 +35,6 @@
 
 ## English summary
 
-Planned work, roughly in the order we intend to tackle it: player-level volume (no system-wide volume changes), stream-URL caching plus next-track prefetch, accurate playback progress, search paging, a narrow-terminal layout fallback, clearer first-run guidance when no usable player is installed, and child-process cleanup on hard exits. Then features whose API already exists: translated lyrics, artist albums, personal FM, and like/unlike in lists. Engineering work: unit tests wired into CI, a slimmer publish output, Dependabot, and documented contribution rules.
+Planned work, roughly in the order we intend to tackle it: player-level volume (no system-wide volume changes), stream-URL caching plus next-track prefetch, accurate playback progress, search paging, a narrow-terminal layout fallback, clearer first-run guidance when no usable player is installed, and child-process cleanup on hard exits. Then features whose API already exists: translated lyrics, artist albums, personal FM, and like/unlike in lists. Engineering work: a slimmer publish output, Dependabot, and documented contribution rules. Unit tests for the playback-queue reducer and the width helpers already ship and run in CI.
 
 Not planned: a GUI, or bypassing membership and copyright restrictions. User-visible limitations live in the README "Known issues" section and are removed there once fixed.

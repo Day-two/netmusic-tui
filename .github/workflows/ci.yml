@@ -33,3 +33,24 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  test:
+    name: unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          # The tests are platform-independent, so one job is enough; the
+          # build job above already covers every supported Node version.
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test

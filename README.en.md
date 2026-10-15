@@ -207,16 +207,20 @@ npm ci           # install dependencies
 npm run dev      # run the sources with tsx
 npm run build    # compile to dist/
 npm run lint     # currently the same as tsc --noEmit (type check)
+npm test         # run the unit tests (vitest)
 ```
 
-CI (GitHub Actions) type-checks and builds on Node 18 / 20 / 22 for Ubuntu and Windows.
+CI (GitHub Actions) type-checks and builds on Node 18 / 20 / 22 for Ubuntu and Windows, and runs the unit tests in a separate job.
 
 Source layout:
 
 ```text
 src/
 ├── index.tsx          entry point (Ink render)
-├── store.tsx          useReducer state: auth, navigation, playback, selection, focus, dialogs
+├── store/
+│   ├── reducer.ts     pure state: types, initialState, reducer (no React)
+│   └── context.tsx    React layer: StoreProvider and useStore
+├── store.tsx          re-exports the two modules above (import paths unchanged)
 ├── api.ts             NetEase API wrapper (every call returns ApiResult<T>)
 ├── player.ts          external player wrapper: play / pause / seek / system volume
 ├── version.ts         version read from package.json at runtime
@@ -224,6 +228,8 @@ src/
 ├── components/        pages and shared components
 └── utils/             CJK width + truncation, local storage
 ```
+
+Tests live next to the code they cover (`src/**/*.test.ts`) and are kept out of the published `dist/`.
 
 Development history and provenance are documented in [docs/PROVENANCE.md](docs/PROVENANCE.md).
 
@@ -234,7 +240,7 @@ Development history and provenance are documented in [docs/PROVENANCE.md](docs/P
 - **Generation** — on 2026-06-06/07 the whole source tree was written from an empty directory by **OpenCode 1.16.2** (model `mimo-v2.5-pro`), through 68 file writes in a single session. The session id, time range, tool-call histogram and the original instructions are recorded in [docs/PROVENANCE.md](docs/PROVENANCE.md).
 - **Human pass** — the maintainer then reviewed every file and fixed a batch of interaction defects (selection mode and playback progress being reset, audio continuing after deleting the playing track, `Ctrl+C` bypassing the exit confirmation, keystrokes leaking into the login form, CJK truncation in the lyric view and player bar, the restored position being display-only), removed dead code, and added the MIT licence, CI, changelog and provenance record. Each change is a separate themed commit that can be checked in the git history.
 - **Maintenance commitment** — the maintainer does their best to keep it maintainable: CI enforces type-checking and building, changes are committed by theme, and user-visible limitations are collected in [Known issues](#known-issues) and moved into the [CHANGELOG](CHANGELOG.md) once fixed.
-- **Current gaps (evaluate accordingly)** — no automated tests yet, no caching or retries in the API layer, and playback progress is estimated. AI-generated code can contain logic errors nobody has reviewed; do not depend on it in critical paths, and please open an issue when something breaks.
+- **Current gaps (evaluate accordingly)** — the unit tests only cover the playback-queue reducer and the text-width helpers; the UI and the network layer are still untested, the API layer has no caching or retries, and playback progress is estimated. AI-generated code can contain logic errors nobody has reviewed; do not depend on it in critical paths, and please open an issue when something breaks.
 
 ## Acknowledgements
 
