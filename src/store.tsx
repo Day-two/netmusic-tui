@@ -88,8 +88,9 @@ type Action =
   | { type: 'SET_MODE'; payload: AppMode }
   | { type: 'NAVIGATE'; payload: Page }
   | { type: 'GO_BACK' }
-  | { type: 'SET_SONG'; payload: Song }
   | { type: 'SET_PLAYLIST'; payload: { songs: Song[]; startIndex?: number } }
+  | { type: 'REORDER_PLAYLIST'; payload: { songs: Song[] } }
+  | { type: 'REMOVE_TRACKS'; payload: { remove: Set<number> } }
   | { type: 'PLAY_SONG_NOW'; payload: { songs: Song[]; startIndex: number } }
   | { type: 'APPEND_PLAYLIST'; payload: Song[] }
   | { type: 'SET_PLAYER_STATUS'; payload: PlayerStatus }
@@ -107,8 +108,6 @@ type Action =
   | { type: 'SET_SELECTED_INDICES'; payload: Set<number> }
   | { type: 'SELECT_ALL'; payload: number }
   | { type: 'INVERT_SELECTION'; payload: number }
-  | { type: 'MOVE_SELECTED_UP' }
-  | { type: 'MOVE_SELECTED_DOWN' }
   | { type: 'RESTORE_STATE'; payload: { playlist: Song[]; currentIndex: number; currentSong: Song | null; progress: number; volume: number } }
   | { type: 'SET_FOCUS_MODE'; payload: boolean }
   | { type: 'SHOW_CONFIRM'; payload: { message: string; action: 'exit' | 'logout' } }
@@ -204,14 +203,6 @@ function reducer(state: AppState, action: Action): AppState {
         currentPage: state.previousPage ?? 'home',
         previousPage: null,
         mode: 'normal',
-      };
-
-    case 'SET_SONG':
-      return {
-        ...state,
-        currentSong: action.payload,
-        playerStatus: 'playing',
-        progress: 0,
       };
 
     case 'SET_PLAYLIST': {
@@ -370,34 +361,50 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, selectedIndices: inverted };
     }
 
-    case 'MOVE_SELECTED_UP': {
-      if (state.selectedIndices.size === 0) return state;
-      const pl = [...state.playlist];
-      const newSel = new Set(state.selectedIndices);
-      const sorted = [...state.selectedIndices].sort((a, b) => a - b);
-      for (const idx of sorted) {
-        if (idx <= 0 || newSel.has(idx - 1)) continue;
-        [pl[idx - 1], pl[idx]] = [pl[idx], pl[idx - 1]];
-        newSel.delete(idx);
-        newSel.add(idx - 1);
-      }
-      const newIdx = pl.findIndex(s => s.id === state.currentSong?.id);
-      return { ...state, playlist: pl, selectedIndices: newSel, currentIndex: newIdx >= 0 ? newIdx : state.currentIndex };
+    case 'REORDER_PLAYLIST': {
+      // Reordering keeps the queue position, progress, selection and selection
+      // mode intact. SET_PLAYLIST is for starting playback of a new list.
+      const songs = action.payload.songs;
+      const current = state.currentSong;
+      const idx = current ? songs.findIndex(s => s.id === current.id) : -1;
+      return {
+        ...state,
+        playlist: songs,
+        currentIndex: idx >= 0 ? idx : state.currentIndex,
+      };
     }
 
-    case 'MOVE_SELECTED_DOWN': {
-      if (state.selectedIndices.size === 0) return state;
-      const pl = [...state.playlist];
-      const newSel = new Set(state.selectedIndices);
-      const sorted = [...state.selectedIndices].sort((a, b) => b - a);
-      for (const idx of sorted) {
-        if (idx >= pl.length - 1 || newSel.has(idx + 1)) continue;
-        [pl[idx], pl[idx + 1]] = [pl[idx + 1], pl[idx]];
-        newSel.delete(idx);
-        newSel.add(idx + 1);
+    case 'REMOVE_TRACKS': {
+      const remove = action.payload.remove;
+      if (remove.size === 0) return state;
+
+      const remaining = state.playlist.filter((_, i) => !remove.has(i));
+      if (remaining.length === state.playlist.length) return state;
+
+      const currentRemoved = state.currentIndex >= 0 && remove.has(state.currentIndex);
+      let removedBefore = 0;
+      for (const i of remove) {
+        if (i < state.currentIndex) removedBefore++;
       }
-      const newIdx = pl.findIndex(s => s.id === state.currentSong?.id);
-      return { ...state, playlist: pl, selectedIndices: newSel, currentIndex: newIdx >= 0 ? newIdx : state.currentIndex };
+
+      const nextIndex = currentRemoved
+        ? Math.min(state.currentIndex - removedBefore, remaining.length - 1)
+        : state.currentIndex - removedBefore;
+      const nextSong = nextIndex >= 0 ? remaining[nextIndex] ?? null : null;
+
+      return {
+        ...state,
+        playlist: remaining,
+        currentIndex: nextSong ? nextIndex : -1,
+        currentSong: nextSong,
+        // Deleting the playing track advances the queue (while respecting a manual
+        // pause); an emptied queue is left 'idle' for the caller to stop.
+        playerStatus: currentRemoved
+          ? (nextSong ? (state.playerStatus === 'playing' ? 'playing' : 'paused') : 'idle')
+          : state.playerStatus,
+        progress: currentRemoved ? 0 : state.progress,
+        selectedIndices: new Set<number>(),
+      };
     }
 
     case 'RESTORE_STATE':

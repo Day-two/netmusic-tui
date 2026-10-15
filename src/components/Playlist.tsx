@@ -31,12 +31,14 @@ export function Playlist() {
 
     if (!state.selectionMode) return;
 
-    // Helper: swap two items in the store playlist
-    const swapSongs = (i: number, j: number) => {
+    // Helper: swap two adjacent tracks. REORDER_PLAYLIST (not SET_PLAYLIST) keeps
+    // progress, the selection and selection mode, so moving a track no longer
+    // drops you out of selection mode or resets the progress bar.
+    const moveTrack = (i: number, j: number) => {
       if (i < 0 || j < 0 || i >= songs.length || j >= songs.length) return;
       const next = [...songs];
       [next[i], next[j]] = [next[j], next[i]];
-      dispatch({ type: 'SET_PLAYLIST', payload: { songs: next, startIndex: next.findIndex(s => s.id === state.currentSong?.id) } });
+      dispatch({ type: 'REORDER_PLAYLIST', payload: { songs: next } });
     };
 
     // Helper: swap selection membership between two indices
@@ -57,7 +59,7 @@ export function Playlist() {
       case 'J':
         // Move selected song down (swap with next)
         if (selectedIndex < songs.length - 1) {
-          swapSongs(selectedIndex, selectedIndex + 1);
+          moveTrack(selectedIndex, selectedIndex + 1);
           swapSelected(selectedIndex, selectedIndex + 1);
           setSelectedIndex(selectedIndex + 1);
         }
@@ -69,7 +71,7 @@ export function Playlist() {
       case 'K':
         // Move selected song up (swap with previous)
         if (selectedIndex > 0) {
-          swapSongs(selectedIndex, selectedIndex - 1);
+          moveTrack(selectedIndex, selectedIndex - 1);
           swapSelected(selectedIndex, selectedIndex - 1);
           setSelectedIndex(selectedIndex - 1);
         }
@@ -93,13 +95,13 @@ export function Playlist() {
         break;
       case 'd':
       case 'D':
-        // Delete selected songs from playlist
+        // Delete the selected tracks from the queue
         {
-          const remaining = songs.filter((_, i) => !state.selectedIndices.has(i));
+          const remove = new Set(state.selectedIndices);
+          const remaining = songs.filter((_, i) => !remove.has(i));
           if (remaining.length < songs.length) {
             const deleted = songs.length - remaining.length;
-            dispatch({ type: 'SET_PLAYLIST', payload: { songs: remaining, startIndex: remaining.findIndex(s => s.id === state.currentSong?.id) } });
-            dispatch({ type: 'SET_SELECTED_INDICES', payload: new Set() });
+            dispatch({ type: 'REMOVE_TRACKS', payload: { remove } });
             setSelectedIndex(Math.min(selectedIndex, Math.max(0, remaining.length - 1)));
             dispatch({ type: 'SHOW_TOAST', payload: { message: `Removed ${deleted} songs`, type: 'info' } });
           }
