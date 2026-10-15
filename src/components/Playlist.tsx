@@ -7,7 +7,7 @@ import { useLayout } from './Layout.js';
 
 export function Playlist() {
   const { state, dispatch } = useStore();
-  const { playPlaylist, playSongNow, appendSongs } = usePlayer();
+  const { playPlaylist, playSongNow, appendSongs, stop } = usePlayer();
   const { width, height } = useLayout();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -102,6 +102,9 @@ export function Playlist() {
           if (remaining.length < songs.length) {
             const deleted = songs.length - remaining.length;
             dispatch({ type: 'REMOVE_TRACKS', payload: { remove } });
+            // An emptied queue has nothing left to play, so stop the audio as well:
+            // the playback effect only reacts to 'playing' and would leave it running.
+            if (remaining.length === 0) stop();
             setSelectedIndex(Math.min(selectedIndex, Math.max(0, remaining.length - 1)));
             dispatch({ type: 'SHOW_TOAST', payload: { message: `Removed ${deleted} songs`, type: 'info' } });
           }
