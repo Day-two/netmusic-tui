@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { useStore, type Song } from '../store.js';
@@ -51,6 +51,15 @@ export function Search() {
   const [subLoading, setSubLoading] = useState(false);
 
   const currentCategory = SEARCH_CATEGORIES[categoryIndex];
+
+  // While a drill-down view is open this page owns Esc/h, so the global keyboard
+  // layer (useKeyboard) stands down and the two never both react to one keypress.
+  useEffect(() => {
+    dispatch({ type: 'SET_BACK_HANDLED', payload: subView !== null });
+    return () => {
+      dispatch({ type: 'SET_BACK_HANDLED', payload: false });
+    };
+  }, [subView, dispatch]);
 
   const performSearch = useCallback(async (keywords: string, type: SearchTypeValue, pageNum: number = 1) => {
     if (!keywords.trim()) return;
@@ -135,7 +144,7 @@ export function Search() {
     if (subView && state.mode === 'normal') {
       // Selection mode keys
       if (state.selectionMode) {
-        if (key.escape || input === 'v') {
+        if (key.escape || input === 'h') {
           dispatch({ type: 'TOGGLE_SELECTION_MODE' });
           return;
         }
@@ -178,10 +187,6 @@ export function Search() {
         playPlaylist(subView.songs, 0);
         return;
       }
-      if (input === 'v') {
-        dispatch({ type: 'TOGGLE_SELECTION_MODE' });
-        return;
-      }
       return;
     }
 
@@ -189,10 +194,7 @@ export function Search() {
     if (state.selectionMode && state.mode === 'normal') {
       const isSongCategory = currentCategory.type === SearchType.SONG || currentCategory.type === SearchType.LYRIC;
       if (isSongCategory && searchResult?.songs) {
-        if (key.escape || input === 'v') {
-          dispatch({ type: 'TOGGLE_SELECTION_MODE' });
-          return;
-        }
+        // Exiting selection mode is handled centrally by useKeyboard (v/Esc)
         if (input === 'l' || input === ' ') {
           dispatch({ type: 'TOGGLE_SELECT_INDEX', payload: selectedIndex });
           return;

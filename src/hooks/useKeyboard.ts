@@ -142,6 +142,9 @@ export function useKeyboard({ enabled = true }: KeyboardOptions = {}) {
     }
     switch (input) {
       case ' ':
+        // Space belongs to the focused list while selecting items, so it must
+        // not double as play/pause here.
+        if (state.selectionMode) break;
         if (state.playerStatus === 'playing') {
           pause();
         } else if (state.playerStatus === 'paused') {
