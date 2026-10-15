@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { useStore } from '../store.js';
+import { VERSION } from '../version.js';
 
 interface StatusBarProps {
   width: number;
@@ -52,7 +53,7 @@ export function StatusBar({ width }: StatusBarProps) {
           </Box>
         )}
         <Text color={state.isGuest ? 'yellow' : 'gray'}>
-          {state.isGuest ? '👤 Guest' : (state.nickname ?? 'v1.0.0')}
+          {state.isGuest ? '👤 Guest' : (state.nickname ?? `v${VERSION}`)}
         </Text>
       </Box>
 
