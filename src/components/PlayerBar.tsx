@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { useStore } from '../store.js';
-import { formatDuration } from '../utils/format.js';
+import { formatDuration, truncateText } from '../utils/format.js';
 
 interface PlayerBarProps {
   width: number;
@@ -42,14 +42,11 @@ export function PlayerBar({ width }: PlayerBarProps) {
   const filledWidth = Math.round((progressPercent / 100) * barWidth);
   const progressBar = '■'.repeat(filledWidth) + '□'.repeat(barWidth - filledWidth);
 
-  // Truncate song name if too long
-  const maxNameWidth = width - 20;
-  const songName = currentSong.name.length > maxNameWidth
-    ? currentSong.name.slice(0, maxNameWidth - 1) + '…'
-    : currentSong.name;
-  const artistName = currentSong.artists.length > maxNameWidth
-    ? currentSong.artists.slice(0, maxNameWidth - 1) + '…'
-    : currentSong.artists;
+  // Truncate by display width (CJK characters are two columns wide), otherwise
+  // long Chinese/Japanese titles wrap and push the progress bar out of place
+  const maxNameWidth = Math.max(10, width - 20);
+  const songName = truncateText(currentSong.name, maxNameWidth);
+  const artistName = truncateText(currentSong.artists, maxNameWidth);
 
   return (
     <Box flexDirection="column">

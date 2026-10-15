@@ -3,7 +3,7 @@ import { Box, Text, useStdout } from 'ink';
 import { useStore } from '../store.js';
 import { getLyric } from '../api.js';
 import { Loading } from './common/Loading.js';
-import { formatDuration } from '../utils/format.js';
+import { formatDuration, truncateText } from '../utils/format.js';
 import { useLayout } from './Layout.js';
 
 interface LyricLine {
@@ -145,10 +145,9 @@ function renderLyricMode(
           const lineIndex = startIdx + i;
           const isCurrent = lineIndex === currentLineIndex;
 
-          // Truncate long text
-          const displayText = line.text.length > maxLyricWidth
-            ? line.text.slice(0, maxLyricWidth - 1) + '…'
-            : line.text;
+          // Truncate by display width: a CJK character takes two columns, so
+          // counting characters would overflow the line
+          const displayText = truncateText(line.text, maxLyricWidth);
 
           return (
             <Box key={`${lineIndex}-${line.time}`}>
@@ -179,6 +178,8 @@ function renderFocusMode(
   currentSong: { name: string; artists: string; album: string; duration: number },
 ) {
   const statusIcon = playerStatus === 'playing' ? '▶' : playerStatus === 'paused' ? '❚❚' : '■';
+  // Focus mode centres every line, so anything wider than the terminal wraps
+  const lineWidth = Math.max(10, width - 4);
   const currentTime = formatDuration(progress);
   const totalTime = formatDuration(currentSong.duration);
 
@@ -207,22 +208,22 @@ function renderFocusMode(
       <Box marginBottom={1}>
         <Text bold>
           <Text color="green">{statusIcon}</Text>
-          <Text> {currentSong.name}</Text>
+          <Text> {truncateText(currentSong.name, lineWidth)}</Text>
         </Text>
       </Box>
 
       <Box marginBottom={2}>
-        <Text dimColor>{currentSong.artists} · {currentSong.album}</Text>
+        <Text dimColor>{truncateText(`${currentSong.artists} · ${currentSong.album}`, lineWidth)}</Text>
       </Box>
 
       {/* Two lyric lines: adjacent + current */}
       <Box flexDirection="column" alignItems="center" marginBottom={2}>
         {adjacentLine && (
-          <Text dimColor>{adjacentLine.text}</Text>
+          <Text dimColor>{truncateText(adjacentLine.text, lineWidth)}</Text>
         )}
         <Box marginY={1}>
           <Text color="cyan" bold>
-            {lyrics[currentLineIndex]?.text || '♪'}
+            {truncateText(lyrics[currentLineIndex]?.text || '♪', lineWidth)}
           </Text>
         </Box>
       </Box>
