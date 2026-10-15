@@ -78,12 +78,35 @@ describe('getCharWidth', () => {
     expect(getCharWidth('、')).toBe(2); // CJK punctuation
   });
 
-  it('falls back to one column for scripts it does not model', () => {
-    // Known limitation, pinned on purpose: Hangul syllables and emoji are
-    // wrong (1 instead of 2), so mixed lines can still drift by one column.
-    expect(getCharWidth('한')).toBe(1);
-    expect(getCharWidth('🎵')).toBe(1);
-    expect(getCharWidth('é')).toBe(1);
+  it('counts Hangul as two columns', () => {
+    expect(getCharWidth('한')).toBe(2); // syllable
+    expect(getCharWidth('글')).toBe(2); // syllable
+    expect(getCharWidth('\u1100')).toBe(2); // Jamo leading consonant
+    expect(getCharWidth('\u1161')).toBe(2); // Jamo vowel
+  });
+
+  it('counts pictographic emoji as two columns', () => {
+    expect(getCharWidth('🎵')).toBe(2);
+    expect(getCharWidth('😀')).toBe(2); // emoticons
+    expect(getCharWidth('🚀')).toBe(2); // transport and map
+    expect(getCharWidth('🧡')).toBe(2); // supplemental symbols
+  });
+
+  it('counts zero-width marks as no columns', () => {
+    expect(getCharWidth('\u0301')).toBe(0); // combining acute
+    expect(getCharWidth('\ufe0f')).toBe(0); // variation selector-16
+    expect(getCharWidth('\u200d')).toBe(0); // zero-width joiner
+  });
+
+  it('still counts one column for symbols and scripts it does not treat as wide', () => {
+    // Box drawing, arrows and the progress-bar glyphs must stay one column or
+    // the frames they draw would come apart.
+    expect(getCharWidth('─')).toBe(1);
+    expect(getCharWidth('▶')).toBe(1);
+    expect(getCharWidth('■')).toBe(1);
+    expect(getCharWidth('…')).toBe(1);
+    expect(getCharWidth('é')).toBe(1); // precomposed, so one column
+    expect(getCharWidth('✓')).toBe(1);
   });
 });
 
@@ -94,16 +117,18 @@ describe('getStringWidth', () => {
     expect(getStringWidth('你好')).toBe(4);
     expect(getStringWidth('你好abc')).toBe(7);
     expect(getStringWidth('＞＜')).toBe(4); // fullwidth punctuation forms
+    expect(getStringWidth('한글')).toBe(4);
+    expect(getStringWidth('a🎵b')).toBe(4);
   });
 
   it('ignores ANSI escape codes', () => {
     expect(getStringWidth('\u001b[31m你好\u001b[0m')).toBe(4);
   });
 
-  it('counts a combining mark as an extra column', () => {
-    // Known limitation, pinned on purpose: combining marks should take no
-    // width, so decomposed accents over-report.
-    expect(getStringWidth('a\u0301')).toBe(2);
+  it('does not let a combining mark add a column', () => {
+    expect(getStringWidth('a\u0301')).toBe(1);
+    expect(getStringWidth('e\u0301\u0302')).toBe(1);
+    expect(getStringWidth('🎵\ufe0f')).toBe(2);
   });
 });
 

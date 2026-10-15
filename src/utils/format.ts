@@ -32,10 +32,36 @@ export function stripAnsi(str: string): string {
 }
 
 /**
- * Get display width of a single character (CJK characters take 2 columns)
+ * Get display width of a single character, following UAX #11 (East Asian Width)
+ * and UAX #29 well enough for the scripts this UI actually renders.
+ *
+ * Rules, in order:
+ *   0 — control characters and zero-width marks (combining marks, variation
+ *       selectors, ZWJ/ZWNJ, BOM)
+ *   2 — East Asian Wide/Fullwidth: CJK ideographs and punctuation, fullwidth
+ *       forms, Hangul syllables and Jamo, and pictographic emoji
+ *   1 — everything else
+ *
+ * Known limitation: a combining mark is treated as zero width, so a decomposed
+ * accent stays flush with its base character, but ZWJ emoji sequences are not
+ * measured as one grapheme cluster (two joined emoji count as 4 columns even
+ * where a terminal renders them as one glyph).
  */
 export function getCharWidth(char: string): number {
   const code = char.codePointAt(0) ?? 0;
+
+  // Control characters occupy no cell
+  if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return 0;
+
+  // Combining marks, variation selectors and joiners attach to another glyph
+  if (code >= 0x0300 && code <= 0x036f) return 0; // combining diacritical marks
+  if (code >= 0x1ab0 && code <= 0x1aff) return 0; // combining diacritical marks extended
+  if (code >= 0x1dc0 && code <= 0x1dff) return 0; // combining diacritical marks supplement
+  if (code >= 0x20d0 && code <= 0x20ff) return 0; // combining marks for symbols
+  if (code >= 0xfe00 && code <= 0xfe0f) return 0; // variation selectors
+  if (code === 0x200b || code === 0x200c || code === 0x200d) return 0; // ZWSP, ZWNJ, ZWJ
+  if (code === 0x2060 || code === 0xfeff) return 0; // word joiner, BOM
+
   // CJK Unified Ideographs
   if (code >= 0x4e00 && code <= 0x9fff) return 2;
   // CJK Symbols and Punctuation
@@ -46,6 +72,21 @@ export function getCharWidth(char: string): number {
   if (code >= 0xf900 && code <= 0xfaff) return 2;
   // CJK Extension A
   if (code >= 0x3400 && code <= 0x4dbf) return 2;
+  // Hangul Jamo (leading consonants and vowels — Jamo Extended-B is code 0xd7b0+)
+  if (code >= 0x1100 && code <= 0x115f) return 2;
+  if (code >= 0x1160 && code <= 0x11ff) return 2;
+  // Hangul syllables — Korean text was measured half its real width before
+  if (code >= 0xac00 && code <= 0xd7a3) return 2;
+  // Hangul Jamo Extended-A
+  if (code >= 0xa960 && code <= 0xa97f) return 2;
+
+  // Pictographic emoji
+  if (code >= 0x1f300 && code <= 0x1f5ff) return 2; // symbols and pictographs
+  if (code >= 0x1f600 && code <= 0x1f64f) return 2; // emoticons
+  if (code >= 0x1f680 && code <= 0x1f6ff) return 2; // transport and map
+  if (code >= 0x1f900 && code <= 0x1f9ff) return 2; // supplemental symbols
+  if (code >= 0x1fa70 && code <= 0x1faff) return 2; // symbols and pictographs extended-A
+
   return 1;
 }
 
