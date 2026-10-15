@@ -1,11 +1,13 @@
 # netmusic-tui
 
-> A terminal (TUI) music player for NetEase Cloud Music (网易云音乐), built with [Ink](https://github.com/vadimdemedes/ink) + React and powered by the [NetEase Cloud Music API](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced).
+> 终端里的网易云音乐播放器，基于 [Ink](https://github.com/vadimdemedes/ink) + React 实现，后端使用 [@neteasecloudmusicapienhanced/api](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)。
 
 [![CI](https://github.com/Day-two/netmusic-tui/actions/workflows/ci.yml/badge.svg)](https://github.com/Day-two/netmusic-tui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)](tsconfig.json)
+
+**简体中文** | [English](README.en.md)
 
 ```text
  netmusic-tui                     ▸ Home   Search   Rank   List   Lyric        Day-two
@@ -22,200 +24,244 @@
    ■■■■■■■■■■■■■■■□□□□□□□□□□□□□□□□□□□□□□□□□
 ```
 
-*(Illustrative text rendering of the layout, not a captured screenshot.)*
+*(终端布局示意，不是真实截图。)*
 
 ---
 
-## Features
+## 目录
 
-- **Login** — phone + password, QR code (scan with the NetEase Cloud Music app) or guest mode
-- **Browse** — daily recommendations, your playlists, and the full ranking list (top lists)
-- **Search** — songs, artists, albums, playlists and lyrics, with drill-down into an artist's hot songs, an album's track list, or a playlist's tracks
-- **Playback queue** — the queue is the playlist page; move, delete, append or play a subset of songs with a vim-style selection mode
-- **Lyrics** — time-synced scrolling lyrics plus an immersive focus view with a progress bar
-- **Session persistence** — the login cookie (30-day expiry) and the playback queue/position are restored on the next launch (the saved position is actually resumed when a seek-capable player is available — see Requirements)
-- **Terminal-correct layout** — CJK-aware width measurement keeps columns aligned for Chinese/Japanese/Korean text
-- **Cross-platform** — Windows, Linux and macOS
+- [项目简介](#项目简介)
+- [功能特性](#功能特性)
+- [环境要求](#环境要求)
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [按键说明](#按键说明)
+- [数据与配置](#数据与配置)
+- [平台差异](#平台差异)
+- [已知问题](#已知问题)
+- [常见问题排查](#常见问题排查)
+- [参与开发](#参与开发)
+- [致谢](#致谢)
+- [免责声明](#免责声明)
+- [许可证](#许可证)
 
-## Requirements
+## 项目简介
 
-- **Node.js >= 18**
-- **One external audio player in `PATH`.** Playback shells out to a system player; the first one found in this order is used:
+**netmusic-tui** 把网易云音乐搬进终端：用键盘完成登录、搜索、播放、看歌词和管理播放队列，适合习惯待在终端里的人。
 
-  `mplayer` → `afplay` → `mpg123` → `mpg321` → `play` (sox) → `omxplayer` → `aplay` → `cmdmp3` → `cvlc` → `powershell`
+设计取舍：
 
-  On macOS `afplay` is built in. On Linux install `mpg123` or `mplayer`. On Windows install `mpg123` (or `mplayer`/VLC's `cvlc`); the built-in `powershell` fallback is a last resort, not a reliable player.
-- **Optional — seekable pause/resume.** Pausing kills the player process and resuming seeks back to the saved position, which needs `ffplay`, `mpv`, `mplayer` or `mpg123`. Without one of those, resuming restarts the track from the beginning.
+- **界面**用 Ink + React 渲染，按终端宽高自适应；中/日/韩混排按**显示宽度**计算而不是字符数，所以列不会错位。
+- **播放**交给系统里已有的播放器（`mpg123` / `ffplay` / `mpv` / `mplayer` 等），因此不需要编译原生模块，装完即用。
+- **登录态与播放状态**保存在本地，下次启动自动恢复队列与播放位置（续播需要具备 seek 能力的播放器，见[环境要求](#环境要求)）。
 
-## Install
+## 功能特性
 
-Not published to npm yet — install from source:
+- **登录** —— 手机号 + 密码、二维码扫码、游客模式
+- **浏览** —— 每日推荐、我的歌单、排行榜（榜单列表 + 榜单详情）
+- **搜索** —— 歌曲 / 歌手 / 专辑 / 歌单 / 歌词五类，可下钻到歌手热门、专辑曲目、歌单曲目
+- **播放队列** —— List 页就是播放队列，vim 风格多选后可批量移动、删除、追加，或只播放选中的歌
+- **歌词** —— 时间轴同步滚动，另有沉浸式聚焦模式（含进度条）
+- **会话恢复** —— 登录 cookie（30 天）与播放队列/位置本地保存，启动即恢复；具备 seek 能力时可从上次位置续播
+- **终端友好** —— CJK 宽度感知，中文/日文/全角字符列对齐；窗口缩放实时重排
+- **跨平台** —— Windows / Linux / macOS
+
+## 环境要求
+
+- **Node.js ≥ 18**
+- **`PATH` 中至少有一个可用的外部播放器**，按以下顺序取第一个找到的：
+
+  `mplayer` → `afplay` → `mpg123` → `mpg321` → `play`(sox) → `omxplayer` → `aplay` → `cmdmp3` → `cvlc` → `powershell`
+
+  - **macOS**：系统自带 `afplay`，开箱可用。
+  - **Linux**：安装 `mpg123` 或 `mplayer`。
+  - **Windows**：建议安装 `mpg123`（或 `mplayer` / VLC 的 `cvlc`）；内置的 `powershell` 只能算兜底，并不可靠。
+- **可选：seek 能力**（决定"暂停后续播"能否回到原位）。暂停的实现是结束播放进程并记录时间点，恢复时需要 `ffplay` / `mpv` / `mplayer` / `mpg123` 之一跳转到该位置；都没有时恢复会从头播放。
+
+## 安装
+
+尚未发布到 npm，从源码安装：
 
 ```bash
 git clone https://github.com/Day-two/netmusic-tui.git
 cd netmusic-tui
 npm ci
 npm run build
-npm link          # or: npm install -g .
-netmusic          # start the player
+npm link          # 或者：npm install -g .
+netmusic          # 启动播放器
 ```
 
-With `npm link` / a global install the command is **`netmusic`** (an alias `netmusic-tui` is also registered). Without installing, run it from the checkout with `npm start` (after `npm run build`) or `npm run dev` (tsx, no build step).
+全局安装后命令是 **`netmusic`**（同时注册了别名 `netmusic-tui`）。不想全局安装时，可在仓库内 `npm start`（需先 `npm run build`）或 `npm run dev`（用 tsx 直跑源码，无需构建）。
 
-Once the package is published, the intended usage will be:
+发布到 npm 之后的用法（当前尚未发布）：
 
 ```bash
-npm install -g netmusic-tui   # or: npx netmusic-tui
+npm install -g netmusic-tui   # 或：npx netmusic-tui
 netmusic
 ```
 
-## Quick start
+## 快速开始
 
-1. Run `netmusic`.
-2. On the sign-in screen the form is already focused: type your **phone number**, press `Enter`, then type your **password** and press `Enter`.
-3. Prefer not to type a password? Press `Esc` to reach the shortcut layer, then `Tab` (or `2`) for a **QR code** to scan with the mobile app, or `g` for **guest mode** (search, lyrics and limited playback).
+1. 运行 `netmusic`。
+2. 登录页默认已经处于输入状态：输入**手机号**回车，再输入**密码**回车。
+3. 不想输密码：按 `Esc` 回到快捷键层，再按 `Tab` 或 `2` 显示二维码，用手机网易云音乐 App 扫码；按 `g` 进入游客模式（可搜索、看歌词，部分歌曲无法播放）。
 
-## Key bindings
+> 如果账号触发了网易云的风控（要求验证码），手机号密码登录会失败，请改用二维码登录，详见[已知问题](#已知问题)。
 
-### Anywhere (normal mode)
+## 按键说明
 
-| Key | Action |
+### 通用（普通模式）
+
+| 按键 | 作用 |
 | --- | --- |
-| `n` / `p` | Next / previous page (Home → Search → Rank → List → Lyric) |
-| `Space` | Play / pause (ignored while selecting items) |
-| `→` `.` `>` | Next track |
-| `←` `,` `<` | Previous track |
-| `+` `=` / `-` | Volume up / down by 3% |
-| `/` | Search page in input mode |
-| `v` | Toggle selection mode (Search and List pages) |
-| `Esc` / `h` | Leave selection mode, otherwise go back |
-| `L` | Log out (Home page) |
-| `q` / `Ctrl+C` | Quit (asks for confirmation) |
+| `n` / `p` | 下一页 / 上一页（首页 → 搜索 → 榜单 → 列表 → 歌词） |
+| `Space` | 播放 / 暂停（多选状态下不生效） |
+| `→` `.` `>` | 下一曲 |
+| `←` `,` `<` | 上一曲 |
+| `+` `=` / `-` | 音量 +3% / −3% |
+| `/` | 进入搜索页并聚焦输入框 |
+| `v` | 切换多选模式（搜索页、列表页） |
+| `Esc` / `h` | 退出多选，否则返回上一页 |
+| `L` | 退出登录（首页） |
+| `q` / `Ctrl+C` | 退出程序（会二次确认） |
 
-### Lists and tables
+### 列表与表格
 
-| Key | Action |
+| 按键 | 作用 |
 | --- | --- |
-| `j` `k` / `↑` `↓` | Move the cursor |
-| `g` / `G` | First / last item |
-| `PgDn` `PgUp` / `Ctrl+d` `Ctrl+u` | Move one page |
-| `Enter` / `l` | Play (or open) the selected item |
+| `j` `k` / `↑` `↓` | 移动光标 |
+| `g` / `G` | 跳到首项 / 末项 |
+| `PgDn` `PgUp` / `Ctrl+d` `Ctrl+u` | 翻一页 |
+| `Enter` / `l` | 播放（或进入）当前项 |
 
-### Home
+### 首页
 
-| Key | Action |
+| 按键 | 作用 |
 | --- | --- |
-| `Tab` | Switch between *Daily Recommendations* and *My Playlists* |
-| `P` | Play all daily recommendations |
-| `r` | Retry after a load error |
-| (guest) `2` / `l` | Go to search / leave guest mode and sign in |
+| `Tab` | 在「每日推荐 / 我的歌单」之间切换 |
+| `P` | 播放全部每日推荐 |
+| `r` | 加载失败后重试 |
+| （游客模式）`2` / `l` | 去搜索 / 退出游客模式去登录 |
 
-### Search
+### 搜索页
 
-| Key | Action |
+| 按键 | 作用 |
 | --- | --- |
-| `1`…`5` / `Tab` | Switch category: songs, artists, albums, playlists, lyrics |
-| `/` or `i` | Focus the search box |
-| `Esc` (while typing) | Leave the search box; `Esc` again goes back |
-| `Enter` | Submit / play the selected result / open the drill-down |
-| `P` | Play all current results |
-| `Esc` / `h` in a drill-down | Return to the result list |
+| `1`…`5` / `Tab` | 切换分类：歌曲、歌手、专辑、歌单、歌词 |
+| `/` 或 `i` | 聚焦搜索框 |
+| `Esc`（输入中） | 离开搜索框；再按一次返回上一页 |
+| `Enter` | 提交搜索 / 播放选中项 / 进入下钻页 |
+| `P` | 播放当前全部结果 |
+| 下钻页中 `Esc` / `h` | 返回结果列表 |
 
-### Playlist (the playback queue)
+### 播放队列（List 页）
 
-| Key | Action |
+| 按键 | 作用 |
 | --- | --- |
-| `v` | Enter selection mode |
-| `l` `Space` / `h` | Select / deselect the item under the cursor |
-| `a` / `x` | Select all / invert selection |
-| `j` `k` | Move the cursor |
-| `J` `K` | Move the selected item down / up |
-| `d` `D` | Delete the selected items from the queue |
-| `P` | Append the selected items to the end of the queue |
-| `Enter` | Replace the queue with the selected items and play them |
+| `v` | 进入多选模式 |
+| `l` `Space` / `h` | 选中 / 取消选中光标所在项 |
+| `a` / `x` | 全选 / 反选 |
+| `j` `k` | 移动光标 |
+| `J` `K` | 把选中项下移 / 上移 |
+| `d` `D` | 从队列删除选中项 |
+| `P` | 把选中项追加到队尾 |
+| `Enter` | 用选中项替换队列并开始播放 |
 
-### Ranking, lyrics and dialogs
+### 榜单、歌词与对话框
 
-| Key | Action |
+| 按键 | 作用 |
 | --- | --- |
-| `Enter` / `l` (Rank) | Open a ranking |
-| `Esc` / `h` (Rank detail) | Back to the ranking list |
-| `r` (Rank error) | Retry |
-| `Tab` (Lyric) | Enter / leave focus mode |
-| `y` `Enter` / `n` `Esc` (dialog) | Confirm / cancel |
+| `Enter` / `l`（榜单） | 打开榜单详情 |
+| `Esc` / `h`（榜单详情） | 返回榜单列表 |
+| `r`（加载失败） | 重试 |
+| `Tab`（歌词页） | 进入 / 退出聚焦模式 |
+| `y` `Enter` / `n` `Esc`（对话框） | 确认 / 取消 |
 
-## Configuration and data
+## 数据与配置
 
-Everything is stored in `~/.netmusic-cli/` (the directory name is kept for backward compatibility with earlier installs of this project):
+所有状态保存在 `~/.netmusic-cli/`（目录名沿用旧版以便兼容，**改名会导致需要重新登录**）：
 
-| File | Contents |
+| 文件 | 内容 |
 | --- | --- |
-| `cookie.json` | Login cookie, expires after 30 days |
-| `guest.json` | Guest-mode flag |
-| `player-state.json` | Queue, current track, position and volume |
+| `cookie.json` | 登录凭据，30 天后自动失效 |
+| `guest.json` | 游客模式标记 |
+| `player-state.json` | 播放队列、当前歌曲、播放位置与音量 |
 
-**These files contain credentials — never commit or share them.** They are listed in `.gitignore`.
+> ⚠️ **这些文件包含账号凭据，不要提交、不要分享。** 它们已在 `.gitignore` 中排除；第三方拿到 `cookie.json` 等同于拿到你的登录态。
 
-## Platform notes
+## 平台差异
 
-- **Volume** changes the *system* master volume: `winmm` on Windows (via PowerShell, so rapid `+`/`-` presses can lag), `pactl` on Linux, `osascript` on macOS.
-- **Windows** needs an audio player in `PATH`; `mpg123` is the most reliable choice.
-- **Pause/resume** keeps its position only when a seekable player is available (see Requirements).
-- Terminal resize is handled; the layout recalculates on the fly.
+- **音量** —— 调整的是**系统主音量**：Windows 用 `winmm`（经 PowerShell 调用，连续按键可能有延迟），Linux 用 `pactl`，macOS 用 `osascript`。因此调音量会同时影响其它正在发声的程序。
+- **Windows** —— 必须自行准备播放器并加入 `PATH`，推荐 `mpg123`。
+- **暂停 / 续播** —— 只有存在具备 seek 能力的播放器时才能回到原位置（见[环境要求](#环境要求)）。
+- **终端缩放** —— 布局实时重排，无需重启。
 
-## Troubleshooting
+## 已知问题
 
-| Symptom | What to do |
+> 本节随修复进度更新：问题修好后会从这里移除，并在 [CHANGELOG](CHANGELOG.md) 中记录。
+
+1. **手机号密码登录无法处理验证码。** 当网易云触发风控要求验证码时，登录会失败并直接显示接口返回的原文。**建议使用二维码登录**（`Esc` → `Tab` 或 `2`）。
+2. **续播依赖 seek 播放器。** 没有 `ffplay` / `mpv` / `mplayer` / `mpg123` 时，暂停后恢复会从头播放（此时界面会如实把进度归零，不会假装还在上次位置）。
+3. **音量改的是系统主音量。** 会影响其它程序；Windows 下每次调整都会启动一次 PowerShell，长按 `+` / `-` 可能卡顿。
+4. **搜索只能看到前 30 条。** 暂不支持翻页或加载更多（会显示结果总数，但看不到更多）。
+5. **歌手详情只显示热门歌曲。** 专辑数据已经请求但尚未展示。
+6. **翻译歌词未显示。** 接口已返回 `tlyric`，界面目前只渲染原文时间轴。
+7. **进度是推算值。** 按本地时钟计算，暂停、跳转之后可能有轻微误差；聚焦模式的进度条同样是估算。
+8. **切歌有等待。** 播放地址是切歌时才向接口解析的，没有预取与缓存，首次播放某首歌通常需要等接口返回。
+9. **VIP / 版权受限歌曲**可能取不到播放地址，属于接口侧限制。
+10. **异常退出不清理子进程。** 正常退出会停止播放器；但若强制结束进程（任务管理器、直接关窗口），个别情况下播放器进程可能残留，需要手动结束。
+11. **过窄终端。** 宽度小于约 40 列时布局会退化（内容被截断）。
+12. **尚未接入界面的功能。** 私人 FM（`getPersonalFm`）与「喜欢歌曲」（`toggleLike`）已在接口层实现，暂无界面入口。
+
+## 常见问题排查
+
+| 现象 | 处理办法 |
 | --- | --- |
-| `Couldn't find a suitable audio player` / no sound | Install one of the players listed in Requirements and make sure it is in `PATH` |
-| `xeapi public key is missing` | The API's optional signing step failed (usually offline); playback falls back to the unsigned endpoint. Re-run the track after reconnecting |
-| A track will not play | VIP/copyright-restricted tracks may not return a stream URL for your account; try another track |
-| Lyrics are out of sync | Some tracks ship unsynced or offset lyrics; only timestamped lines are shown |
-| Columns look misaligned | Report the terminal and version — width handling covers CJK, fullwidth and ANSI text |
-| Login expired | Delete `~/.netmusic-cli/cookie.json` and sign in again |
+| 提示 `Couldn't find a suitable audio player` / 没有声音 | 按[环境要求](#环境要求)安装任一播放器，并确认它在 `PATH` 中 |
+| 提示 `xeapi public key is missing` | 接口的可选签名步骤失败（多为网络问题），会自动回退到未签名接口；恢复网络后重试该曲目 |
+| 某首歌无法播放 | VIP / 版权受限歌曲可能取不到地址，换一首试试 |
+| 歌词不同步 | 部分歌曲只提供未打时间轴或本身有偏移的歌词，界面只显示带时间轴的行 |
+| 列表看起来没对齐 | 请反馈终端类型与版本；宽度计算已覆盖 CJK、全角与 ANSI 字符 |
+| 登录失效 | 删除 `~/.netmusic-cli/cookie.json` 后重新登录 |
 
-## Not wired up yet
+## 参与开发
 
-`src/api.ts` already implements **personal FM** and **liking a song**, but no page calls them yet. They are the natural next features.
+```bash
+npm ci           # 安装依赖
+npm run dev      # 用 tsx 直接运行源码
+npm run build    # 编译到 dist/
+npm run lint     # 目前等同于 tsc --noEmit（类型检查）
+```
 
-## Acknowledgements
+CI（GitHub Actions）会在 Node 18 / 20 / 22 × Ubuntu / Windows 上执行类型检查与构建。
 
-- [@neteasecloudmusicapienhanced/api](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) (MIT, by MoeFurina) — the API layer, itself a revival of [Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)
-- [Ink](https://github.com/vadimdemedes/ink) + [React](https://react.dev) — the terminal UI
-- [ink-text-input](https://github.com/vadimdemedes/ink-text-input), [qrcode](https://github.com/soldair/node-qrcode), [play-sound](https://github.com/Marak/play-sound)
-- Inspiration came from using other terminal NetEase Cloud Music players; no code was copied from them.
+源码结构：
 
-Development history and provenance (including the tool and model that produced the initial code) are documented in [docs/PROVENANCE.md](docs/PROVENANCE.md).
+```text
+src/
+├── index.tsx          入口（Ink render）
+├── store.tsx          useReducer 状态：登录、导航、播放、多选、焦点、对话框
+├── api.ts             网易云接口封装（统一返回 ApiResult<T>）
+├── player.ts          外部播放器封装：播放 / 暂停 / seek / 系统音量
+├── version.ts         版本号（运行时读取 package.json）
+├── hooks/             usePlayer（播放副作用）、useKeyboard（全局键位）
+├── components/        页面与通用组件
+└── utils/             CJK 宽度与截断、本地存储
+```
 
-## Disclaimer
+开发史与来源说明见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
 
-This is an **unofficial** client, not affiliated with or endorsed by NetEase. It requires your own NetEase Cloud Music account, is intended for personal and educational use, and must not be used to redistribute copyrighted music. Please respect the service's terms and local copyright law. The player only streams what the official API returns for your account.
+## 致谢
 
-## License
+- [@neteasecloudmusicapienhanced/api](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)（MIT，作者 MoeFurina）——接口层，本身是 [Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi) 的复兴分支
+- [Ink](https://github.com/vadimdemedes/ink) + [React](https://react.dev) —— 终端界面
+- [ink-text-input](https://github.com/vadimdemedes/ink-text-input)、[qrcode](https://github.com/soldair/node-qrcode)、[play-sound](https://github.com/Marak/play-sound)
+- 设计灵感来自使用其它终端网易云播放器的体验；未复制它们的代码。
+
+## 免责声明
+
+本项目是**非官方**客户端，与网易公司没有任何隶属或认可关系。使用前需自备网易云音乐账号，仅供个人学习与研究使用，请勿用于传播受版权保护的音乐。请遵守服务条款与当地著作权法律。播放内容完全来自官方接口针对你账号返回的结果。
+
+## 许可证
 
 [MIT](LICENSE) © 2026 Day-two
-
----
-
-## 中文说明
-
-**netmusic-tui** 是一个终端里的网易云音乐播放器（Ink + React 实现）。
-
-**安装**（尚未发布到 npm，从源码安装）：
-
-```bash
-git clone https://github.com/Day-two/netmusic-tui.git
-cd netmusic-tui
-npm ci && npm run build && npm link
-netmusic
-```
-
-**前置条件**：Node.js ≥ 18，并且系统里要有可用的播放器（按 `mplayer → afplay → mpg123 → mpg321 → play → omxplayer → aplay → cmdmp3 → cvlc → powershell` 顺序取第一个）。Windows 上建议装 `mpg123`。想要「暂停后续播不回到开头」，还需要 `ffplay`/`mpv`/`mplayer`/`mpg123` 其中之一。
-
-**登录**：登录页默认处于输入状态，直接输入手机号 `Enter`、密码 `Enter`；按 `Esc` 回到快捷键层后，`Tab` 或 `2` 用二维码扫码登录，`g` 进入游客模式。
-
-**最常用的按键**：`n`/`p` 切页，`Space` 播放/暂停，`←`/`→` 上/下一曲，`+`/`-` 音量，`/` 搜索，`v` 多选，`Esc`/`h` 返回，`q` 退出。
-
-**数据目录**：`~/.netmusic-cli/`（`cookie.json` 登录凭据、`player-state.json` 播放队列与进度）。**该目录含账号凭据，不要提交或分享。**
-
-**许可证**：MIT。

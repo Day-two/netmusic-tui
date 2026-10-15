@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The documentation is now bilingual: `README.md` is the full Chinese guide (the audience is mostly Chinese-speaking) and `README.en.md` holds the English version, each linking to the other
+- Both READMEs gained a **known issues** section listing the current limitations; resolved items are removed from it and recorded here
+
 ### Fixed
 
 - Moving a track (`J`/`K`) or deleting tracks (`d`/`D`) in the queue reused the action that starts a new list, so one move dropped you out of selection mode and reset the progress bar; reordering now preserves progress, the selection and selection mode
