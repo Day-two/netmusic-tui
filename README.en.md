@@ -172,7 +172,7 @@ Everything is stored in `~/.netmusic-cli/` (the directory name is kept for backw
 
 ## Known issues
 
-> This section is updated as fixes land: resolved items are removed here and recorded in the [CHANGELOG](CHANGELOG.md).
+> This section is updated as fixes land: resolved items are removed here and recorded in the [CHANGELOG](CHANGELOG.md). **Planned work lives in the [roadmap](docs/ROADMAP.md).**
 
 1. **Phone login cannot handle a captcha.** When NetEase challenges the account, login fails and shows the raw API message. Use **QR code login** instead (`Esc` → `Tab` or `2`).
 2. **Resuming needs a seek-capable player.** Without `ffplay` / `mpv` / `mplayer` / `mpg123`, resuming after a pause restarts the track (the UI honestly reports position 0 rather than pretending otherwise).
